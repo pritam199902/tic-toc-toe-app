@@ -4,9 +4,10 @@ import GameBoard from "./GameBoard";
 import Join from "./Join";
 
 
+const url = `https://tic-tac-toe-service-01.herokuapp.com`
+// const url = "http://localhost:8080"
 
-
-const socket = io(`https://tic-tac-toe-service-01.herokuapp.com`, { transport: ['websocket'] });
+const socket = io(url, { transport: ['websocket'] });
 
 function App() {
   const [state, setState] = useState({
@@ -29,28 +30,19 @@ function App() {
 
   function on_create_room(arg) {
     socket.emit("createRoom", arg, response => {
-      console.log(response);
+      // console.log(response);
       setState({ ...state, room: response?.room || null, user: response?.user || null })
     })
   }
 
   function on_join_room(arg) {
     socket.emit("joinRoom", arg, response => {
-      console.log(response);
+      // console.log(response);
       if (!response) alert("Fail to join!")
       setState({ ...state, room: response?.room || null, user: response?.user || null })
     })
   }
 
-
-
-  // useEffect(() => {
-  //   // setState({ ...state, is_loading: false })
-  //   socket.on("someone-joined", (data) => {
-  //     alert("Another one joined")
-  //     setState({ ...state, room: data?.room || null })
-  //   })
-  // })
 
 
 

@@ -15,6 +15,8 @@ const GameBoard = (props) => {
         list: [...props?.data?.room?.list],
         selected_user: props?.data?.room?.selected_user,
         last_selected_user: props?.data?.room?.last_selected_user,
+
+        winer: null
     })
 
 
@@ -149,6 +151,7 @@ const GameBoard = (props) => {
         if (!state?.user1?.id || !state?.user2?.id) return alert("Another user is not joined yet!")
         if (state?.user !== state?.selected_user) return alert("This is not your tern. Wait till your oponent.")
         props?.socket?.emit("move-click", { room_id: state?.room_id, move_info: arg }, response => {
+            // console.log("move-res", response);
             if (response) {
                 setState({
                     ...state,
@@ -161,6 +164,20 @@ const GameBoard = (props) => {
 
     }
 
+
+
+    function CopyToClipboard() {
+
+        let str = document.getElementById('rid').innerHTML;
+        const el = document.createElement('textarea');
+        el.value = str;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        alert('Copied ROOM ID: ' + el.value);
+    }
+
     const handleReset = () => {
         // setState({ ...state, is_loading: false, list: [...init_list], selected_user: state?.user_list?.user1?.selector, last_selected_user: null })
     }
@@ -168,8 +185,8 @@ const GameBoard = (props) => {
     useEffect(() => {
 
         props?.socket?.on("someone-joined", (response) => {
-            console.log("Another user: ", response);
-            alert("Another one joined")
+            // console.log("Another user: ", response);
+            alert(response?.user2?.name + " joined!")
             setState({
                 ...state,
                 selected_user: response?.selected_user,
@@ -191,15 +208,17 @@ const GameBoard = (props) => {
 
         props?.socket?.on("result", (winer) => {
             // const winer = handleCalculate(state?.list, state?.last_selected_user)
-            console.log({ winer });
+            // console.log({ winer });
             // setTimeout(() => {
             if (winer === true) {
                 alert("Match draw! Play again")
-                return handleReset()
+                return
             }
             if (winer) {
-                alert("WINER IS: " + winer)
-                return handleReset()
+                let w_name = state?.user1?.id == winer ? state?.user1?.name : state?.user2?.name
+                setState({ ...state, winer: w_name })
+                // alert("WINER IS: " + w_name)
+                return
             }
             // }, 200);
         })
@@ -207,7 +226,7 @@ const GameBoard = (props) => {
 
         // move-click-update
         props?.socket?.on("move-click-update", (response) => {
-            console.log("update-click ", response);
+            // console.log("update-click ", response);
             if (response) {
                 setState({
                     ...state,
@@ -222,16 +241,23 @@ const GameBoard = (props) => {
 
         // reset
         props?.socket?.on("reset-list", (response) => {
-            console.log("reset ", response);
+            // console.log("reset ", response);
             if (response) {
-                setState({
-                    ...state,
-                    list: response
-                })
+                setTimeout(() => {
+
+                    setState({
+                        ...state,
+                        list: response?.list,
+                        user1: response?.user1,
+                        user2: response?.user2,
+                        selected_user: response?.selected_user,
+                        last_selected_user: response?.last_selected_user,
+
+                        winer: null
+                    })
+                }, 5000);
             }
         })
-
-
 
     }, [])
 
@@ -242,31 +268,19 @@ const GameBoard = (props) => {
 
 
     return (
-        <div >
+        <div className='my-4' >
             {/* --------- board header -------- */}
             <div className="row my-3">
                 <div className="col-lg-6 col-md-8 m-auto">
                     <div className="card card-body p-2" >
-                        <div className="pb-2 text-center">
-                            ROOM ID: {state?.room_id}
+                        <div className="pb-2 text-center" onClick={CopyToClipboard} >
+                            ROOM ID: <span id="rid" style={{ color: "green", fontWeight: 'bold', cursor: "copy" }} data-toggle="tooltip" data-placement="bottom" title="Copy the Room Id" >
+                                {state?.room_id}
+                            </span>
                         </div>
                         {/* -------------------------- */}
                         <div className="d-flex justify-content-between align-items-center">
                             <div>
-
-                                {/* <div className={"user_selected"} >
-                                    <div
-                                        style={{
-                                            textAlign: "center",
-                                            fontWeight: "bold",
-                                            color: "green"
-                                        }}
-                                    >
-                                        You
-                                    </div>
-                                    <b>  MY NAME</b>
-                                    <div> Icon: <img src={roundIcon} alt="SVG" height="100%" /> </div>
-                                </div> */}
 
                                 {
                                     state?.user == state?.user1?.id ?
@@ -305,7 +319,7 @@ const GameBoard = (props) => {
                                 {
                                     state?.user == state?.user1?.id ?
                                         <div className={state?.selected_user == state?.user2?.id ? "user_selected" : ""} >
-                                             <div
+                                            <div
                                                 style={{
                                                     textAlign: "center",
                                                     fontWeight: "bold",
@@ -314,12 +328,12 @@ const GameBoard = (props) => {
                                             >
                                                 Oponent
                                             </div>
-                                             <b> {state?.user2?.name} </b>
+                                            <b> {state?.user2?.name} </b>
                                             <div> Icon: <img src={crossIcon} alt="SVG" height="100%" /> </div>
                                         </div>
                                         :
                                         <div className={state?.selected_user == state?.user1?.id ? "user_selected" : ""} >
-                                              <div
+                                            <div
                                                 style={{
                                                     textAlign: "center",
                                                     fontWeight: "bold",
@@ -328,7 +342,7 @@ const GameBoard = (props) => {
                                             >
                                                 Oponent
                                             </div>
-                                             <b> {state?.user1?.name} </b>
+                                            <b> {state?.user1?.name} </b>
                                             <div> Icon: <img src={roundIcon} alt="SVG" height="100%" /> </div>
                                         </div>
 
@@ -340,33 +354,63 @@ const GameBoard = (props) => {
                 </div>
             </div>
 
-            {/* ------------- board ------------ */}
-            <div className="row my-3">
-                <div className="col-lg-6 col-md-8 m-auto">
-                    {/* <div className="card card-body p-0 py-3"  > */}
-                    <div className="p-0 py-3"  >
+            {/* ------------------------------ */}
 
-                        <div className="board">
-                            {
-                                state?.list?.map?.((item, index) => {
-                                    return <div key={index} className="item" onClick={() => !item?.is_selected ? handleClick(item) : null} >
-                                        {
-                                            item?.is_selected &&
-                                            <img src={item?.selected_by == state?.user1.id ? roundIcon : crossIcon} alt="SVG" height="100%" />
-                                        }
-                                    </div>
-                                })
-                            }
+
+            {/* ------------- board ------------ */}
+            {
+                !state?.winer &&
+                <>
+
+                    <div className="row mt-2 m-auto">
+                        <div className="col m-auto text-center">
+                            <h2 className="text-light" >
+                                Turn: {state?.selected_user == state?.user1?.id ? state?.user1?.name : state?.user2?.name}
+                            </h2>
+
                         </div>
                     </div>
-                </div>
-            </div>
+
+                    <div className="row my-2">
+                        <div className="col-lg-6 col-md-8 m-auto">
+                            {/* <div className="card card-body p-0 py-3"  > */}
+                            <div className="p-0 py-3"  >
+
+                                <div className="board">
+                                    {
+                                        state?.list?.map?.((item, index) => {
+                                            return <div key={index} className="item" onClick={() => !item?.is_selected ? handleClick(item) : null} >
+                                                {
+                                                    item?.is_selected &&
+                                                    <img src={item?.selected_by == state?.user1.id ? roundIcon : crossIcon} alt="SVG" height="100%" />
+                                                }
+                                            </div>
+                                        })
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            }
 
             {/* <div className="row my-3">
                 <div className="col-lg-6 col-md-8 m-auto">
                     <button className='btn' onClick={handleReset} >Clear</button>
                 </div>
             </div> */}
+
+            {
+                state?.winer &&
+                <div className="row my-3 m-auto">
+                    <div className="col m-auto text-center">
+                        <h2 className="text-light" >
+                            WINER: {state?.winer}
+                        </h2>
+                        <img src="./winer.gif" style={{ width: "70%" }} />
+                    </div>
+                </div>
+            }
 
             {/* --------------------------------- */}
         </div>
