@@ -6,7 +6,7 @@ import Join from "./Join";
 
 
 
-const socket = io(`http://localhost:8080`, { transport: ['websocket'] });
+const socket = io(`https://tic-tac-toe-service-01.herokuapp.com`, { transport: ['websocket'] });
 
 function App() {
   const [state, setState] = useState({
